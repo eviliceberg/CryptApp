@@ -11,12 +11,24 @@ struct HomeView: View {
     
     @State private var onClickPortfolio: Bool = false
     
+    @EnvironmentObject var vm: HomeViewModel
+    
     var body: some View {
         ZStack {
             Color.background.ignoresSafeArea()
             
             VStack {
                 header
+                
+                columnTitles
+                
+                if !onClickPortfolio {
+                    allCoinsList
+                        .transition(.move(edge: .leading))
+                } else {
+                    portfolioCoinsList
+                        .transition(.move(edge: .trailing))
+                }
                 
                 Spacer()
             }
@@ -46,6 +58,44 @@ struct HomeView: View {
         }
         .padding(.horizontal, 16)
     }
+    //MARK: - Lists
+    private var allCoinsList: some View {
+        List {
+            ForEach(vm.coins) { coin in
+                CoinRowView(coin: coin, showHoldingsColumn: false)
+                    .listRowInsets(.init(top: 10, leading: 0, bottom: 10, trailing: 10))
+            }
+        }
+        .listStyle(.plain)
+    }
+    
+    private var portfolioCoinsList: some View {
+        List {
+            ForEach(vm.portfolioCoins) { pCoin in
+                CoinRowView(coin: pCoin, showHoldingsColumn: true)
+                    .listRowInsets(.init(top: 10, leading: 0, bottom: 10, trailing: 10))
+            }
+        }
+        .listStyle(.plain)
+    }
+    //MARK: - Column Titles
+    private var columnTitles: some View {
+        HStack {
+            Text("Coin")
+            
+            Spacer()
+            
+            if onClickPortfolio {
+                Text("Holdings")
+            }
+            
+            Text("Price")
+                .frame(width: UIScreen.main.bounds.width / 3.5, alignment: .trailing)
+        }
+        .font(.caption)
+        .foregroundStyle(.secondaryText)
+        .padding(.horizontal)
+    }
     
 }
 
@@ -54,4 +104,5 @@ struct HomeView: View {
         HomeView()
             .toolbar(.hidden)
     }
+    .environmentObject(HomeViewModel())
 }
