@@ -63,7 +63,9 @@ struct CoinRowView: View {
                 case .success(let image):
                     image
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 30, height: 30)
+                        .clipShape(.circle)
                 case .failure:
                     ProgressView()
                 @unknown default:
