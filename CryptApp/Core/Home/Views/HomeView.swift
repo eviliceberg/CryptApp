@@ -35,6 +35,7 @@ struct HomeView: View {
                 Spacer()
             }
             .animation(.spring, value: onClickPortfolio)
+            .animation(.smooth, value: vm.coins)
         }
     }
     

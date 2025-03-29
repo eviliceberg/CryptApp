@@ -23,6 +23,7 @@ final class LocalFileManager {
         let data = try Data(contentsOf: path)
         
         let result = try JSONDecoder().decode(T.self, from: data)
+        
         return result
     }
     

@@ -9,7 +9,11 @@ import Foundation
 
 //https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&sparkline=true&price_change_percentage=24h&precision=2
 
-struct CoinModel: Identifiable, Codable {
+struct CoinModel: Identifiable, Codable, Equatable {
+    static func == (lhs: CoinModel, rhs: CoinModel) -> Bool {
+        lhs.rank == rhs.rank
+    }
+    
     let id, symbol, name: String
     let image: String
     let currentPrice: Double
