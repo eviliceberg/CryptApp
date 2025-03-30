@@ -58,6 +58,9 @@ extension Double {
         return formatter
     }
     
+    func asPercentString() -> String {
+        return String(format: "%.2f", self) + "%"
+    }
     
     /// Convert a Double into a Currency as a String with 2 decimal places
     ///```
