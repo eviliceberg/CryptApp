@@ -9,19 +9,16 @@ import Foundation
 import Combine
 
 final class HomeViewModel: ObservableObject {
-    @Published var stats: [StatisticModel] = [
-        StatisticModel(title: "Title", value: "Value", percentage: 1),
-        StatisticModel(title: "Title", value: "Value"),
-        StatisticModel(title: "Title", value: "Value"),
-        StatisticModel(title: "Title", value: "Value", percentage: -7)
-    ]
+    @Published var stats: [StatisticModel] = []
     
     @Published var coins: [CoinModel] = []
     @Published var portfolioCoins: [CoinModel] = []
     
     @Published var searchText: String = ""
     
-    private let dataService = CoinDataService()
+    private let coinDataService = CoinDataService()
+    
+    private let marketDataService = MarketDataService()
     
     private let path = FileManager.cacheDirectory.appending(path: "photosCache")
     
@@ -37,11 +34,12 @@ final class HomeViewModel: ObservableObject {
             self.portfolioCoins.append(DeveloperPreview.instance.coin)
         }
         filterCoins()
+        getMarketData()
     }
     
     func filterCoins() {
         $searchText
-            .combineLatest(dataService.$allCoins)
+            .combineLatest(coinDataService.$allCoins)
             .debounce(for: 0.5, scheduler: DispatchQueue.main)
             .sink { [weak self] (searchText, allCoins) in
                 guard let self = self else { return }
@@ -56,8 +54,17 @@ final class HomeViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
+    func getMarketData() {
+        marketDataService.$allData
+            .map(mapGlobalMarketData)
+            .sink(receiveValue: { [weak self] item in
+                self?.stats = item
+            })
+            .store(in: &cancellables)
+    }
+    
     func getCoins() {
-        dataService.$allCoins
+        coinDataService.$allCoins
             .sink { [weak self] allCoins in
                 self?.coins = allCoins
                 guard let self = self else { return }
@@ -80,6 +87,24 @@ final class HomeViewModel: ObservableObject {
         } catch {
             return false
         }
+    }
+    
+    private func mapGlobalMarketData(data: MarketDataModel?) -> [StatisticModel] {
+        var stats: [StatisticModel] = []
+        
+        guard let data = data else { return stats }
+        
+        let marketCap = StatisticModel(title: "Market Cap", value: data.marketCap, percentage: data.marketCapChangePercentage24HUsd)
+        
+        let volume = StatisticModel(title: "24h Volume", value: data.volume)
+        
+        let dominance = StatisticModel(title: "Bitcoin Dominance", value: data.btcDominance)
+        
+        let portfolio = StatisticModel(title: "Portfolio Value", value: "$0.00")
+        
+        stats.append(contentsOf: [marketCap, volume, dominance, portfolio])
+        
+        return stats
     }
     
 }

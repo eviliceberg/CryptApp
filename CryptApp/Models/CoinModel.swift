@@ -11,7 +11,7 @@ import Foundation
 
 struct CoinModel: Identifiable, Codable, Equatable {
     static func == (lhs: CoinModel, rhs: CoinModel) -> Bool {
-        lhs.rank == rhs.rank
+        lhs.id == rhs.id
     }
     
     let id, symbol, name: String

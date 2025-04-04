@@ -62,6 +62,10 @@ extension Double {
         return String(format: "%.2f", self) + "%"
     }
     
+    func asString() -> String {
+        return String(format: "%.2f", self)
+    }
+    
     /// Convert a Double into a Currency as a String with 2 decimal places
     ///```
     ///Convert 1234.56 into "$1,234.56"
@@ -69,6 +73,34 @@ extension Double {
     func asCurrencyWith2Decimals() -> String {
         let number = NSNumber(value: self)
         
-        return currencyFormatter6.string(from: number) ?? "$0.00"
+        return currencyFormatter2.string(from: number) ?? "$0.00"
     }
+    
+    func formattedWithAbbreviations() -> String {
+        let num = abs (Double (self))
+        let sign = (self < 0) ? "-" : ""
+        switch num {
+        case 1_000_000_000_000...:
+            let formatted = num / 1_000_000_000_000
+            let stringFormatted = formatted.asString()
+            return "\(sign)\(stringFormatted)Tn"
+        case 1_000_000_000...:
+            let formatted = num / 1_000_000_000
+            let stringFormatted = formatted.asString()
+            return "\(sign)\(stringFormatted)Bn"
+        case 1_000_000...:
+            let formatted = num / 1_000_000
+            let stringFormatted = formatted.asString()
+            return "\(sign)\(stringFormatted)M"
+        case 1_000...:
+            let formatted = num / 1_000
+            let stringFormatted = formatted.asString()
+            return "\(sign)\(stringFormatted)K"
+        case 0...:
+            return self.asString()
+        default:
+            return "\(sign)\(self)"
+        }
+    }
+    
 }
