@@ -20,6 +20,8 @@ final class HomeViewModel: ObservableObject {
     
     private let marketDataService = MarketDataService()
     
+    private let portfolioDataService = PortfolioDataService()
+    
     private let path = FileManager.cacheDirectory.appending(path: "photosCache")
     
     //private var allCoins: [CoinModel] = []
@@ -27,14 +29,36 @@ final class HomeViewModel: ObservableObject {
     var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
     
     init() {
-        if checkCache() {
-            self.portfolioCoins.append(DeveloperPreview.instance.coin)
-        } else {
+        if !checkCache() {
             getCoins()
-            self.portfolioCoins.append(DeveloperPreview.instance.coin)
-        }
+        } 
         filterCoins()
         getMarketData()
+        getPortfolioCoins()
+    }
+    
+    func getPortfolioCoins() {
+        portfolioDataService.$savedEntities
+            .combineLatest(coinDataService.$allCoins)
+            .map { (portfolio, allCoins) -> [CoinModel] in
+                var result: [CoinModel] = []
+                
+                for item in portfolio {
+                    if let firstCoin = allCoins.first(where: { $0.id == item.coinId }) {
+                        var coin = firstCoin
+                        result.append(coin.updateHoldings(amount: item.amount))
+                    }
+                }
+                return result
+            }
+            .sink { [weak self] portCoins in
+                self?.portfolioCoins = portCoins
+            }
+            .store(in: &cancellables)
+    }
+    
+    func updatePortfolio(coin: CoinModel, amount: Double) {
+        portfolioDataService.updatePortfolio(coin: coin, amount: amount)
     }
     
     func filterCoins() {

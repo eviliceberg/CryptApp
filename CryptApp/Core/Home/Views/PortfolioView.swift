@@ -10,6 +10,7 @@ import SwiftUI
 struct PortfolioView: View {
     
     @EnvironmentObject private var vm: HomeViewModel
+    @Environment(\.dismiss) private var dismiss
     
     @State private var selectedCoin: CoinModel? = nil
     @State private var quantity: String = ""
@@ -41,14 +42,21 @@ struct PortfolioView: View {
             }
             .animation(.spring(duration: 0.3), value: showCheckmark)
             .animation(.spring, value: quantity)
+            .onChange(of: vm.searchText) { oldValue, newValue in
+                if newValue.isEmpty && !oldValue.isEmpty {
+                    selectedCoin = nil
+                    quantity = ""
+                }
+            }
         }
     }
     
     private func saveButtonPressed() {
         
-        guard let coin = selectedCoin else { return }
+        guard let coin = selectedCoin, let quantityDouble = Double(quantity) else { return }
         
         //save
+        vm.updatePortfolio(coin: coin, amount: quantityDouble)
         
         // show checkmark
         showCheckmark = true
@@ -62,7 +70,7 @@ struct PortfolioView: View {
         
         //hide checkmark
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            showCheckmark = false
+            dismiss()
         }
         
     }
@@ -127,18 +135,17 @@ struct PortfolioView: View {
     private var coinLogoList: some View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 10) {
-                ForEach(vm.coins) { coin in
+                ForEach(vm.searchText.isEmpty ? vm.portfolioCoins : vm.coins) { coin in
                     CoinLogoView(coin: coin)
                         .padding(4)
                         .frame(width: 75, height: 100)
                         .background(
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(selectedCoin == coin ? Color.myGreen : Color.clear, lineWidth: 1)
-                            
                         )
                         .onTapGesture {
                             withAnimation(.spring) {
-                                selectedCoin = coin
+                                updateSelectedCoin(coin)
                             }
                         }
                 }
@@ -148,6 +155,15 @@ struct PortfolioView: View {
             
         }
         .scrollIndicators(.hidden)
+    }
+    
+    private func updateSelectedCoin(_ coin: CoinModel) {
+        selectedCoin = coin
+        if let portfolioCoin = vm.portfolioCoins.first(where: { $0.id == coin.id }), let amount = portfolioCoin.currentHoldings {
+            quantity = amount.asString()
+        } else {
+            quantity = ""
+        }
     }
     
 }
