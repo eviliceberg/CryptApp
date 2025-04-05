@@ -69,7 +69,7 @@ struct PortfolioView: View {
         UIApplication.shared.endEditing()
         
         //hide checkmark
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             dismiss()
         }
         
@@ -78,6 +78,7 @@ struct PortfolioView: View {
     private var trailingNavBarItems: some View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark")
+                .foregroundStyle(.accent)
                 .opacity(showCheckmark ? 1.0 : 0.0)
                 .rotationEffect(showCheckmark ? .degrees(0) : .degrees(90))
             Button {
@@ -85,7 +86,6 @@ struct PortfolioView: View {
             } label: {
                 Text("Save")
             }
-            .opacity(Double(quantity) == nil ? 0.0 : 1.0)
             .allowsHitTesting(Double(quantity) != nil)
         }
     }

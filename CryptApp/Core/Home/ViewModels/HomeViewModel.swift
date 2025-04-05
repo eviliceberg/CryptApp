@@ -16,6 +16,8 @@ final class HomeViewModel: ObservableObject {
     
     @Published var searchText: String = ""
     
+    @Published var isLoading: Bool = false
+    
     private let coinDataService = CoinDataService()
     
     private let marketDataService = MarketDataService()
@@ -29,24 +31,22 @@ final class HomeViewModel: ObservableObject {
     var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
     
     init() {
-        if !checkCache() {
-            getCoins()
-        } 
+        //checkCache()
+        //getCoins()
         filterCoins()
-        getMarketData()
         getPortfolioCoins()
+        getMarketData()
     }
     
     func getPortfolioCoins() {
         portfolioDataService.$savedEntities
-            .combineLatest(coinDataService.$allCoins)
+            .combineLatest($coins)
             .map { (portfolio, allCoins) -> [CoinModel] in
                 var result: [CoinModel] = []
                 
                 for item in portfolio {
-                    if let firstCoin = allCoins.first(where: { $0.id == item.coinId }) {
-                        var coin = firstCoin
-                        result.append(coin.updateHoldings(amount: item.amount))
+                    if var firstCoin = allCoins.first(where: { $0.id == item.coinId }) {
+                        result.append(firstCoin.updateHoldings(amount: item.amount))
                     }
                 }
                 return result
@@ -80,15 +80,18 @@ final class HomeViewModel: ObservableObject {
     
     func getMarketData() {
         marketDataService.$allData
+            .combineLatest($portfolioCoins)
             .map(mapGlobalMarketData)
             .sink(receiveValue: { [weak self] item in
                 self?.stats = item
+                self?.isLoading = false
             })
             .store(in: &cancellables)
     }
     
     func getCoins() {
         coinDataService.$allCoins
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] allCoins in
                 self?.coins = allCoins
                 guard let self = self else { return }
@@ -98,22 +101,19 @@ final class HomeViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    func checkCache() -> Bool {
+    func checkCache() {
         do {
             let coins = try LocalFileManager.retrieveFromFileManager(path: path, type: [CoinModel].self)
-            if coins.isEmpty {
-                return false
-            } else {
+            if !coins.isEmpty {
                 self.coins = coins
             }
             print("data from cache")
-            return true
         } catch {
-            return false
+            print("no cache")
         }
     }
     
-    private func mapGlobalMarketData(data: MarketDataModel?) -> [StatisticModel] {
+    private func mapGlobalMarketData(data: MarketDataModel?, portfolioCoins: [CoinModel]) -> [StatisticModel] {
         var stats: [StatisticModel] = []
         
         guard let data = data else { return stats }
@@ -124,11 +124,33 @@ final class HomeViewModel: ObservableObject {
         
         let dominance = StatisticModel(title: "Bitcoin Dominance", value: data.btcDominance)
         
-        let portfolio = StatisticModel(title: "Portfolio Value", value: "$0.00")
+        let portfolioValue =
+            portfolioCoins
+                .map({ $0.currentHoldingsValue })
+                .reduce(0, +)
+        
+        let previousValue = portfolioCoins.map { coin -> Double in
+            let currentValue = coin.currentHoldingsValue
+            let percentChange = coin.priceChangePercentage24H ?? 0.0 / 100
+            let previousValue = currentValue / (1 + percentChange)
+            return previousValue
+        }
+        .reduce(0, +)
+        
+        let percent = ((portfolioValue / previousValue) - 1) * 100
+        
+        let portfolio = StatisticModel(title: "Portfolio Value", value: portfolioValue.asCurrencyWith2Decimals(), percentage: percent)
         
         stats.append(contentsOf: [marketCap, volume, dominance, portfolio])
         
         return stats
+    }
+    
+    func reloadData() {
+        isLoading = true
+        coinDataService.getCoins()
+        marketDataService.getMarketData()
+        HapticManager.notification(type: .success)
     }
     
 }

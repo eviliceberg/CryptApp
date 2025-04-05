@@ -17,7 +17,7 @@ struct HomeStatsView: View {
         HStack {
             ForEach(vm.stats) { stat in
                 StatisticView(stat: stat)
-                    .frame(width: UIScreen.main.bounds.width / 3)
+                    .frame(width: UIScreen.main.bounds.width / 3.2)
             }
         }
         .frame(width: UIScreen.main.bounds.width, alignment: inPortfolio ? .trailing : .leading)
