@@ -18,6 +18,8 @@ final class HomeViewModel: ObservableObject {
     
     @Published var isLoading: Bool = false
     
+    @Published var sortOption: SortOption = .holdings
+    
     private let coinDataService = CoinDataService()
     
     private let marketDataService = MarketDataService()
@@ -29,6 +31,11 @@ final class HomeViewModel: ObservableObject {
     //private var allCoins: [CoinModel] = []
     
     var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
+    
+    
+    enum SortOption {
+        case rank, rankReversed, holdings, holdingsReversed, price, priceReversed
+    }
     
     init() {
         //checkCache()
@@ -52,7 +59,9 @@ final class HomeViewModel: ObservableObject {
                 return result
             }
             .sink { [weak self] portCoins in
-                self?.portfolioCoins = portCoins
+                guard let self = self else { return }
+                
+                self.portfolioCoins = self.sortPortfolio(coins: portCoins)
             }
             .store(in: &cancellables)
     }
@@ -63,17 +72,13 @@ final class HomeViewModel: ObservableObject {
     
     func filterCoins() {
         $searchText
-            .combineLatest(coinDataService.$allCoins)
+            .combineLatest(coinDataService.$allCoins, $sortOption)
             .debounce(for: 0.5, scheduler: DispatchQueue.main)
-            .sink { [weak self] (searchText, allCoins) in
+            .map(filterAndSortCoins)
+            .sink { [weak self] filteredCoins in
                 guard let self = self else { return }
                 
-                self.coins = allCoins
-                
-                if !searchText.isEmpty {
-                    self.coins = self.coins.filter { $0.symbol.localizedCaseInsensitiveContains(searchText) || $0.name.localizedCaseInsensitiveContains(searchText) }
-                }
-                
+                self.coins = filteredCoins
             }
             .store(in: &cancellables)
     }
@@ -110,6 +115,43 @@ final class HomeViewModel: ObservableObject {
             print("data from cache")
         } catch {
             print("no cache")
+        }
+    }
+    
+    private func filterCoins(text: String, coins: [CoinModel]) -> [CoinModel] {
+        guard !text.isEmpty else { return coins }
+        
+        return coins.filter { $0.symbol.localizedCaseInsensitiveContains(text) || $0.name.localizedCaseInsensitiveContains(text) }
+        
+    }
+    
+    private func filterAndSortCoins(text: String, coins: [CoinModel], option: SortOption) -> [CoinModel] {
+        var filteredCoins = filterCoins(text: text, coins: coins)
+        
+        filteredCoins.sort { fc, sc in
+            switch option {
+            case .rank, .holdings:
+                fc.rank < sc.rank
+            case .rankReversed, .holdingsReversed:
+                fc.rank > sc.rank
+            case .price:
+                fc.currentPrice > sc.currentPrice
+            case .priceReversed:
+                fc.currentPrice < sc.currentPrice
+            }
+        }
+        
+        return filteredCoins
+    }
+    
+    private func sortPortfolio(coins: [CoinModel]) -> [CoinModel] {
+        switch sortOption {
+        case .holdings:
+            return coins.sorted(by: { $0.currentHoldingsValue > $1.currentHoldingsValue })
+        case .holdingsReversed:
+            return coins.sorted(by: { $0.currentHoldingsValue < $1.currentHoldingsValue })
+        default:
+            return coins
         }
     }
     
