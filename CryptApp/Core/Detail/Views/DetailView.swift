@@ -26,24 +26,79 @@ struct DetailLoadingView: View {
 struct DetailView: View {
     
     @StateObject var vm: DetailViewModel
+    private let columns: [GridItem] = [
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
+    private let spacing: CGFloat = 30
     
     init(coin: CoinModel) {
         _vm = StateObject(wrappedValue: DetailViewModel(coin: coin))
-        print("Initializing DetailView For \(coin.name)")
     }
     
     var body: some View {
-        VStack {
-            if let details = vm.coinDetails {
-                Text(details.id ?? "")
-                Text(details.description?.en ?? "")
-            }
+        ScrollView {
+            VStack(spacing: 20) {
+                Text("")
+                    .frame(height: 150)
+                
+                overviewSection
+                
+                additionalDetailSection
+                
 
+            }
+            .padding(16)
         }
+        .navigationTitle(vm.coin.name)
         
+    }
+    
+    @ViewBuilder
+    private var overviewSection: some View {
+        Text("Overview")
+            .font(.title)
+            .fontWeight(.bold)
+            .foregroundStyle(.accent)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        
+        Divider()
+        
+        LazyVGrid(
+            columns: columns,
+            alignment: .leading,
+            spacing: spacing,
+            pinnedViews: []) {
+                ForEach(vm.overviewStatistics) { stat in
+                    StatisticView(stat: stat)
+                }
+            }
+    }
+    
+    @ViewBuilder
+    private var additionalDetailSection: some View {
+        Text("Additional Details")
+            .font(.title)
+            .fontWeight(.bold)
+            .foregroundStyle(.accent)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        
+        Divider()
+        
+        LazyVGrid(
+            columns: columns,
+            alignment: .leading,
+            spacing: spacing,
+            pinnedViews: []) {
+                ForEach(vm.additionalStatistics) { stat in
+                    StatisticView(stat: stat)
+                }
+            }
     }
 }
 
 #Preview {
-    DetailView(coin: DeveloperPreview.instance.coin)
+    NavigationStack {
+        DetailView(coin: DeveloperPreview.instance.coin)
+    }
 }
