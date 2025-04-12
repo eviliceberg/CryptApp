@@ -38,19 +38,28 @@ struct DetailView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                Text("")
-                    .frame(height: 150)
+            
+            VStack {
+                ChartView(coin: vm.coin)
+                    .padding(.vertical)
                 
-                overviewSection
-                
-                additionalDetailSection
-                
+                VStack(spacing: 20) {
+                    
+                    overviewSection
+                    
+                    additionalDetailSection
+                    
 
+                }
+                .padding(16)
             }
-            .padding(16)
         }
         .navigationTitle(vm.coin.name)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                navBarTrailingItems
+            }
+        }
         
     }
     
@@ -73,6 +82,26 @@ struct DetailView: View {
                     StatisticView(stat: stat)
                 }
             }
+    }
+    
+    private var navBarTrailingItems: some View {
+        HStack {
+            Text(vm.coin.symbol.uppercased())
+                .font(.headline)
+                .foregroundStyle(.accent)
+            
+            AsyncImage(url: URL(string: vm.coin.image)) { image in
+                image
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 25)
+                    .clipShape(.circle)
+            } placeholder: {
+                ProgressView()
+                    .frame(width: 25)
+            }
+
+        }
     }
     
     @ViewBuilder
