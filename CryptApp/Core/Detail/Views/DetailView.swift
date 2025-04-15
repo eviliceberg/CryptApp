@@ -32,6 +32,8 @@ struct DetailView: View {
     ]
     private let spacing: CGFloat = 30
     
+    @State private var showText: Bool = false
+    
     init(coin: CoinModel) {
         _vm = StateObject(wrappedValue: DetailViewModel(coin: coin))
     }
@@ -45,11 +47,15 @@ struct DetailView: View {
                 
                 VStack(spacing: 20) {
                     
+                    overViewTitle
+                    
+                    descriptionSection
+                    
                     overviewSection
                     
                     additionalDetailSection
                     
-
+                    linksSection
                 }
                 .padding(16)
             }
@@ -64,7 +70,7 @@ struct DetailView: View {
     }
     
     @ViewBuilder
-    private var overviewSection: some View {
+    private var overViewTitle: some View {
         Text("Overview")
             .font(.title)
             .fontWeight(.bold)
@@ -72,7 +78,10 @@ struct DetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         
         Divider()
-        
+    }
+    
+    @ViewBuilder
+    private var overviewSection: some View {
         LazyVGrid(
             columns: columns,
             alignment: .leading,
@@ -82,6 +91,47 @@ struct DetailView: View {
                     StatisticView(stat: stat)
                 }
             }
+    }
+    
+    private var descriptionSection: some View {
+        ZStack {
+            if let description = vm.coinDescription, !description.isEmpty {
+                VStack(alignment: .leading) {
+                    Text(description)
+                        .lineLimit(showText ? nil : 3)
+                        .font(.callout)
+                        .foregroundStyle(.secondaryText)
+                    
+                    Button {
+                        withAnimation(.easeInOut) {
+                            showText.toggle()
+                        }
+                    } label: {
+                        Text(showText ? "Show less" : "Read more...")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .padding(.vertical, 4)
+                    }
+                    .tint(.blue)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+    
+    private var linksSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            if let webSiteURL = vm.webSiteURL, let url = URL(string: webSiteURL) {
+                Link("Website", destination: url)
+            }
+            
+            if let redditURL = vm.redditURL, let url = URL(string: redditURL) {
+                Link("Reddit", destination: url)
+            }
+        }
+        .font(.headline)
+        .tint(.blue)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     private var navBarTrailingItems: some View {
