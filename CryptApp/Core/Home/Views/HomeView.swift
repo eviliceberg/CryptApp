@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var onClickPortfolio: Bool = false
     
     @State private var showPortfolio: Bool = false
+    @State private var showSettingsView: Bool = false
     
     @EnvironmentObject var vm: HomeViewModel
     
@@ -50,6 +51,9 @@ struct HomeView: View {
             .navigationDestination(isPresented: $showDatailView) {
                 DetailLoadingView(coin: $selectedCoin)
             }
+            .sheet(isPresented: $showSettingsView) {
+                SettingsView()
+            }
         }
     }
     
@@ -60,6 +64,8 @@ struct HomeView: View {
                 .onTapGesture {
                     if onClickPortfolio {
                         showPortfolio = true
+                    } else {
+                        showSettingsView = true
                     }
                 }
                 .background(
