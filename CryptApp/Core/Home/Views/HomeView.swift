@@ -40,12 +40,19 @@ struct HomeView: View {
                     allCoinsList
                         .transition(.move(edge: .leading))
                 } else {
-                    portfolioCoinsList
-                        .transition(.move(edge: .trailing))
+                    ZStack {
+                        if vm.portfolioCoins.isEmpty {
+                            emptyPortfolioText
+                        } else {
+                            portfolioCoinsList
+                        }
+                    }
+                    .transition(.move(edge: .trailing))
                 }
                 
                 Spacer()
             }
+            .ignoresSafeArea(edges: .bottom)
             .animation(.spring, value: onClickPortfolio)
             .animation(.smooth, value: vm.coins)
             .navigationDestination(isPresented: $showDatailView) {
@@ -95,6 +102,7 @@ struct HomeView: View {
                     .onTapGesture {
                         segue(coin: coin)
                     }
+                    .listRowBackground(Color.background)
             }
         }
         .listStyle(.plain)
@@ -113,10 +121,21 @@ struct HomeView: View {
                     .onTapGesture {
                         segue(coin: pCoin)
                     }
+                    .listRowBackground(Color.background)
             }
         }
         .listStyle(.plain)
     }
+    
+    private var emptyPortfolioText: some View {
+        Text("You haven't added any coins to your portfolio yet! Click + button to get started! 🧐")
+            .font(.callout)
+            .foregroundStyle(.accent)
+            .fontWeight(.medium)
+            .multilineTextAlignment(.center)
+            .padding(50)
+    }
+    
     //MARK: - Column Titles
     private var columnTitles: some View {
         HStack {
